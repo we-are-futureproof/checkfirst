@@ -48,9 +48,7 @@
       },
       {
         "tab": "API Reference",
-        "icon": "book",
-        "hidden": false
-
+        "openapi": "/api-reference/openapi.json"
       }
     ]
   },
