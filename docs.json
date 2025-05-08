@@ -23,33 +23,33 @@
             "group": "Get Started",
             "pages": [
               "index",
-              "products/schedule-ai/poc"
+              "schedule-ai/poc"
             ]
           },
           {
             "group": "ScheduleAI",
             "pages": [
-              "products/schedule-ai/overview",
-              "products/schedule-ai/concepts",
-              "products/schedule-ai/quickstart",
-              "products/schedule-ai/architecture",
-              "products/schedule-ai/api-orientation",
-              "products/schedule-ai/webhooks",
-              "products/schedule-ai/import"
+              "schedule-ai/overview",
+              "schedule-ai/concepts",
+              "schedule-ai/quickstart",
+              "schedule-ai/architecture",
+              "schedule-ai/api-orientation",
+              "schedule-ai/webhooks",
+              "schedule-ai/import"
             ]
           },
           {
             "group": "InspectAI",
             "pages": [
-              "products/inspect-ai/index",
-              "products/inspect-ai/quickstart",
-              "products/inspect-ai/architecture"
+              "inspect-ai/index",
+              "inspect-ai/quickstart",
+              "inspect-ai/architecture"
             ]
           },
           {
             "group": "VerifyAI",
             "pages": [
-              "products/verify-ai/index"
+              "verify-ai/index"
             ]
           }
         ]
