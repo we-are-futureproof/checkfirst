@@ -30,7 +30,6 @@
             "group": "ScheduleAI",
             "pages": [
               "schedule-ai/overview",
-              "schedule-ai/concepts",
               "schedule-ai/quickstart",
               "schedule-ai/architecture",
               "schedule-ai/api-orientation",
@@ -43,6 +42,7 @@
             "pages": [
               "inspect-ai/index",
               "inspect-ai/quickstart",
+              "inspect-ai/concepts",
               "inspect-ai/architecture"
             ]
           },

@@ -122,7 +122,7 @@ curl -X POST "$BASE/schedules" \
 
 Poll `GET /schedules/{id}` until `status` is `COMPLETED`. To stream progress events instantly, register a webhook (`/hooks`) for `SCHEDULE_COMPLETED` (coming soon).
 
-## HTTP status codes at a glance
+## Outbound HTTP status codes --> to you
 
 | Code    | When you’ll see it                               |
 | :------ | :----------------------------------------------- |
@@ -136,3 +136,10 @@ Poll `GET /schedules/{id}` until `status` is `COMPLETED`. To stream progress eve
 | **409** | Conflict (duplicate idempotency key)             |
 | **429** | Rate limit hit                                   |
 | **5xx** | Anything on our side—safe to retry with back-off |
+
+
+## Inbound HTTP status codes --> to us
+
+| Code    | When you’ll produce it                            |
+| :------ | :----------------------------------------------- |
+| **5xx** | When you encounter an error on your end, if you follow our error format then we can log them properly on our end.  |

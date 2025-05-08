@@ -10,9 +10,23 @@ Use them to automate downstream workflows—post a message in Slack when a repor
 
 | Event `type`                | Fired when…                                         | Typical use-case                                                 |
 | :-------------------------- | :-------------------------------------------------- | :--------------------------------------------------------------- |
-| `REPORT_CREATED`            | A user submits a report from the mobile or web app. | Pull the full report JSON / PDF and archive it in your DMS.      |
-| `ISSUE_CREATED`             | An issue is flagged during an inspection.           | Create a corrective-action ticket and assign it to a supervisor. |
-| `COUNTER_SIGNATURE_CREATED` | A report is counter-signed in the dashboard.        | Mark the job as “Closed” in your ERP and notify the client.      |
+| `STATUS_CHANGED`            | ScheduleAI data model status changed. | Capture change details and act accordingly in your systems.      |
+
+
+#### Status Change Codes
+
+When the `STATUS_CHANGED` event is fired, event `data` will include one of the following:
+
+- Open
+- Allocated inspector
+- Draft date
+- Planned date
+- Accepted by inspector
+- Proposed to client
+- Confirmed by client
+- Completed
+- Cancelled
+
 
 #### Registering a webhook
 
@@ -23,7 +37,7 @@ Use them to automate downstream workflows—post a message in Slack when a repor
 3. Pick an event `type`.
 4. Enter the public **POST** URL your server will listen on.
 
-That’s it—events start flowing immediately.
+That’s it -- events start flowing immediately.
 
 ##### Option 2 – REST API
 
@@ -33,7 +47,7 @@ curl -X POST https://schedule.checkfirst.ai/api/v1/hooks \
   -H "Content-Type: application/json" \
   -d '{
         "url": "https://example.com/webhooks/checkfirst",
-        "type": "REPORT_CREATED"
+        "type": "STATUS_CHANGED"
       }'
 ```
 
@@ -43,7 +57,7 @@ curl -X POST https://schedule.checkfirst.ai/api/v1/hooks \
 ```json
 {
   "id": 9,
-  "type": "REPORT_CREATED",
+  "type": "STATUS_CHANGED",
   "url": "https://example.com/webhooks/checkfirst",
   "client": { "id": 2 }
 }
@@ -61,7 +75,7 @@ Each delivery is a JSON object:
 ```json
 {
   "id": 1042,
-  "type": "ISSUE_CREATED",
+  "type": "STATUS_CHANGED",
   "createdAt": "2024-06-05T09:27:14Z",
   "data": {
     "issueId": "8e2a60e1-92e7-4827-97d5-672b8b5ef4d3",
@@ -75,9 +89,9 @@ Each delivery is a JSON object:
 | Field       | Description                               |
 | :---------- | :---------------------------------------- |
 | `id`        | Unique delivery identifier.               |
-| `type`      | Event name (see table above).             |
+| `type`      | Event type (see table above).             |
 | `createdAt` | UTC timestamp when the event was emitted. |
-| `data`      | Event-specific attributes.                |
+| `data`      | Event-specific attributes                 |
 
 > **Delivery guarantees**
 > Events are **at-least-once**: duplicate IDs are possible—deduplicate on `id`.
@@ -108,3 +122,8 @@ Point the dashboard at the forwarding URL (e.g. `https://random.ngrok.io/webhook
 | List hooks  | `GET /api/v1/hooks`         | `curl -H "X-API-Key:…" https://schedule.checkfirst.ai/api/v1/hooks` |
 | Delete hook | `DELETE /api/v1/hooks/{id}` | `curl -X DELETE …/hooks/9`                                          |
 
+
+## Inspector Sync
+
+- Option 1: Provide a link to a file including all inspectors
+- Option 2: Provide an endpoint including all inspectors

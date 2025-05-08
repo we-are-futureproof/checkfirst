@@ -5,17 +5,6 @@ description: "ScheduleAI Architecture"
 
 This page explains how ScheduleAI is put together under the hood. It gives you the mental model you need when integrating, scaling or troubleshooting large‑volume scheduling workloads.
 
-## At a glance
-
-| Layer                 | Tech                 | Responsibility                                |
-| :-------------------- | :------------------- | :-------------------------------------------- |
-| **Client**            | React + GraphQL      | Interactive planning UI                       |
-| **API Gateway**       | FastAPI, Python      | Org isolation, crud, async orchestration      |
-| **Scheduling Engine** | Rust & OR‑Tools      | Hard/soft constraint solving                  |
-| **Data**              | PostgreSQL 15        | Source of truth for resources, jobs & results |
-| **Messaging**         | Kafka                | Job & event queue, retry & ordering           |
-| **Observability**     | Prometheus + Grafana | Metrics, tracing & alerts                     |
-
 ## Data flow
 
 1. **Ingest** – users create or import *People*, *Projects* and *Activities* via REST or CSV.
