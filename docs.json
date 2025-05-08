@@ -23,19 +23,27 @@
             "group": "Get Started",
             "pages": [
               "index",
-              "quickstart"
+              "products/schedule-ai/poc"
             ]
           },
           {
             "group": "ScheduleAI",
             "pages": [
-              "products/schedule-ai/index"
+              "products/schedule-ai/overview",
+              "products/schedule-ai/concepts",
+              "products/schedule-ai/quickstart",
+              "products/schedule-ai/architecture",
+              "products/schedule-ai/api-orientation",
+              "products/schedule-ai/webhooks",
+              "products/schedule-ai/import"
             ]
           },
           {
             "group": "InspectAI",
             "pages": [
-              "products/inspect-ai/index"
+              "products/inspect-ai/index",
+              "products/inspect-ai/quickstart",
+              "products/inspect-ai/architecture"
             ]
           },
           {

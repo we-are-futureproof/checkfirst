@@ -1,0 +1,138 @@
+---
+title: API Orientation
+description: "ScheduleAI API"
+---
+
+
+ScheduleAI exposes a fully-featured REST API that mirrors every action available in the dashboard. This page covers the universal conventions—authentication, pagination, error format, and idempotency—so you can work efficiently without reading every single endpoint spec.
+
+## Base URL
+
+```text
+https://schedule.checkfirst.ai/api/v1/
+```
+
+All examples on this page assume the base URL above is stored in an environment variable named `BASE`.
+
+## Authentication
+
+Every request must include your organisation’s API key:
+
+```text
+X-API-Key: sk_live_1234567890abcdef
+```
+
+* Keys are non-expiring by default; you can revoke and re-issue them in **Organisation → Developer**.
+* For client-side calls from the dashboard, the platform uses short-lived JWT cookies instead; server integrations should stick to API keys.
+
+## Content-Type & encoding
+
+* **JSON** – default for all request/response bodies.
+* **Multipart** – used for file uploads (`/import` endpoints).
+* **Gzip** – supported for large responses; send `Accept-Encoding: gzip`.
+
+## Pagination & filtering
+
+Most collection endpoints support cursor pagination:
+
+| Query param | Description                                 | Example                 |
+| :---------- | :------------------------------------------ | :---------------------- |
+| `limit`     | Max records to return (1–1000, default 100) | `?limit=200`            |
+| `cursor`    | Opaque cursor pointing to next page         | `?cursor=eyJ...`        |
+| `filter`    | Simple attribute filter (`attr=value`)      | `?filter=status:active` |
+| `sort`      | Sort by attribute asc/desc                  | `?sort=createdAt:desc`  |
+
+The response includes `nextCursor` when more pages are available.
+
+## Idempotency (recommended for retries)
+
+Include a unique header when performing any mutating request (POST, PUT, PATCH, DELETE):
+
+```text
+X-Idempotency-Key: 3c7fbab5-2df1-47f8-bb52-a8f06a5af2e4
+```
+
+If a network error forces a retry, the server will return the original result instead of creating a duplicate resource.
+
+## Rate limiting
+
+* **Organisation limit** – 1 000 requests per minute.
+* The server returns HTTP **429** with `Retry-After` when the limit is exceeded.
+
+## Standard error format
+
+```json
+{
+  "error": {
+    "type": "validation_error",
+    "message": "window.from must be before window.to",
+    "details": {
+      "path": ["window", "from"]
+    }
+  }
+}
+```
+
+| Field     | Meaning                                                                |
+| :-------- | :--------------------------------------------------------------------- |
+| `type`    | One of `validation_error`, `not_found`, `rate_limit`, `internal_error` |
+| `message` | Human-readable message safe for logs/UI                                |
+| `details` | Optional machine-readable context                                      |
+
+## Quick CRUD samples
+
+### List People
+
+```bash
+curl "$BASE/people?limit=50" \
+  -H "X-API-Key: $SAI_KEY"
+```
+
+```json
+{
+  "data": [
+    {"id": "person_alice", "name": "Alice Smith", "competencies": ["WELD"], "homeLocation": "GB-BFS"},
+    {"id": "person_bob",   "name": "Bob Lee",    "competencies": ["NDT"],  "homeLocation": "GB-MAN"}
+  ],
+  "nextCursor": null
+}
+```
+
+### Create a Schedule job
+
+```bash
+curl -X POST "$BASE/schedules" \
+  -H "X-API-Key: $SAI_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "window": {"from": "2025-08-01", "to": "2025-08-31"},
+    "objective": "balanced"
+  }'
+```
+
+```json
+{
+  "id": "sch_2025_AUGUST",
+  "status": "PENDING",
+  "objective": "balanced",
+  "createdAt": "2025-05-08T15:40:22Z"
+}
+```
+
+Poll `GET /schedules/{id}` until `status` is `COMPLETED`. To stream progress events instantly, register a webhook (`/hooks`) for `SCHEDULE_COMPLETED` (coming soon).
+
+## HTTP status codes at a glance
+
+| Code    | When you’ll see it                               |
+| :------ | :----------------------------------------------- |
+| **200** | Successful GET, PATCH, DELETE                    |
+| **201** | Successful POST that created a resource          |
+| **202** | Accepted long-running job (e.g. Export)          |
+| **400** | Malformed JSON or missing field                  |
+| **401** | Invalid `X-API-Key`                              |
+| **403** | Authenticated but not allowed (role/tenant)      |
+| **404** | Resource doesn’t exist / not in your org         |
+| **409** | Conflict (duplicate idempotency key)             |
+| **429** | Rate limit hit                                   |
+| **5xx** | Anything on our side—safe to retry with back-off |

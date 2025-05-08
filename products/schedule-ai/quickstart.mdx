@@ -1,0 +1,101 @@
+---
+title: Quickstart
+description: "ScheduleAI in under 30 minutes"
+---
+
+# Hello, ScheduleAI -- in 30 minutes  ⏱️
+
+Follow the six steps below and you’ll have data imported, an AI‑generated plan, a downloadable report, and real‑time webhooks wired into your app.
+
+1. Create an API key
+2. Import people & projects
+3. Run the scheduler
+4. Review & download reports
+5. Set up real‑time webhooks (optional but recommended)
+
+
+
+### Prerequisites
+
+* A free **Checkfirst** account – [sign up](https://dashboard.checkfirst.ai) if you haven’t already.
+* Organisation **Owner** or **Developer** role (needed to create API keys).
+* `curl` or a similar HTTP client.
+
+> **Base URL** for all calls shown here: `https://schedule.checkfirst.ai/api/v1/`
+
+
+### 1. Create an API key
+
+1. Sign in to the dashboard.
+2. Open **Organisation → Developer**.
+3. Click **Generate API Key** and give it a name (e.g. `quickstart-demo`).
+4. Copy the key value – you’ll only see it once.
+
+```bash
+# store your key in an environment variable for convenience
+export SAI_KEY="sk_live_123..."
+```
+
+
+### 2. Import people & projects
+
+Download the CSV templates from the dashboard (or craft your own) and upload them via the API:
+
+```bash
+curl -X POST "${BASE}/people/import" \
+  -H "X-API-Key: $SAI_KEY" \
+  -F file=@people.csv
+
+curl -X POST "${BASE}/projects/import" \
+  -H "X-API-Key: $SAI_KEY" \
+  -F file=@projects.csv
+```
+
+*Accepted columns and examples are listed in* **Import & Export**.
+
+
+### 3. Run the scheduler
+
+```bash
+curl -X POST "${BASE}/schedules" \
+  -H "X-API-Key: $SAI_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "window": {"from": "2025-06-01", "to": "2025-06-30"},
+    "objective": "min_travel"      // other options: max_utilisation, balanced
+  }'
+```
+
+The response contains a `scheduleId`. Most schedules are ready in seconds; for larger datasets you can poll `GET /schedules/{id}` until `status` becomes `COMPLETED`.
+
+
+### 4. Review & download reports
+
+Utilisation, Travel, Compliance and other reports are available as soon as the schedule is complete.
+
+```bash
+curl -L "${BASE}/reports/utilisation?month=2025-06" \
+  -H "X-API-Key: $SAI_KEY" -o utilisation_june.xlsx
+```
+
+Open the file locally or push it into your BI pipeline.
+
+
+### 5. Set up real‑time webhooks (optional but recommended)
+
+Automatically react when users submit reports or when issues are created:
+
+```bash
+curl -X POST "${BASE}/hooks" \
+  -H "X-API-Key: $SAI_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "REPORT_CREATED",
+    "url" : "https://example.com/schedule/hooks"
+  }'
+```
+
+Your endpoint will now receive a JSON payload every time a new report is submitted.
+
+
+**Done!** You’ve imported data, generated a schedule, exported metrics and wired up automation – all within half an hour.

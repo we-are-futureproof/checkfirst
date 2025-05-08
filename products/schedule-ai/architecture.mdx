@@ -1,0 +1,51 @@
+---
+title: Architecture
+description: "ScheduleAI Architecture"
+---
+
+This page explains how ScheduleAI is put together under the hood. It gives you the mental model you need when integrating, scaling or troubleshooting large‑volume scheduling workloads.
+
+## At a glance
+
+| Layer                 | Tech                 | Responsibility                                |
+| :-------------------- | :------------------- | :-------------------------------------------- |
+| **Client**            | React + GraphQL      | Interactive planning UI                       |
+| **API Gateway**       | FastAPI, Python      | Org isolation, crud, async orchestration      |
+| **Scheduling Engine** | Rust & OR‑Tools      | Hard/soft constraint solving                  |
+| **Data**              | PostgreSQL 15        | Source of truth for resources, jobs & results |
+| **Messaging**         | Kafka                | Job & event queue, retry & ordering           |
+| **Observability**     | Prometheus + Grafana | Metrics, tracing & alerts                     |
+
+## Data flow
+
+1. **Ingest** – users create or import *People*, *Projects* and *Activities* via REST or CSV.
+2. **Enqueue** – a `POST /schedules` call inserts a job message into Kafka.
+3. **Optimise** – the engine pulls the job, loads relevant data, runs constraint solving and writes results back to Postgres.
+4. **Emit events** – once results are stored, engine publishes `SCHEDULE_COMPLETED`; Webhook Dispatcher pushes payloads to subscribers.
+5. **Consume** – clients poll `GET /schedules/{id}` or receive webhook calls; reports can be downloaded or exported downstream.
+
+## Scalability & reliability
+
+| Concern             | Approach                                                                                                           |
+| :------------------ | :----------------------------------------------------------------------------------------------------------------- |
+| **Throughput**      | Engine containers autoscale on CPU queue depth; horizontal Postgres read replicas serve analytics/reporting reads. |
+| **Idempotency**     | All mutating APIs accept an optional `X‑Idempotency‑Key` header; retries are safe.                                 |
+| **Back‑pressure**   | Gateway enforces org‑level rate limits (429) and streams large exports with chunked encoding.                      |
+| **Fault isolation** | Per‑tenant DB schemas; noisy neighbours can’t starve others.                                                       |
+
+## Security & compliance
+
+* **Transport** – TLS 1.3 enforced globally.
+* **Authentication** – long‑lived server keys (`X‑API‑Key`) or short‑lived dashboard JWTs.
+* **Authorisation** – every request resolved against *Organisation ID*; zero cross‑tenant data leakage.
+* **Data** – AES‑256 at rest, point‑in‑time recovery enabled, weekly full backups.
+* **Events** – webhook deliveries are signed with HMAC‑SHA256 using your Webhook Secret.
+* **Standards** – SOC 2 Type II and ISO 27001 certified infrastructure.
+
+## Extensibility points
+
+| Hook                | What you can customise                                                                                      |
+| :------------------ | :---------------------------------------------------------------------------------------------------------- |
+| **Webhooks**        | Receive `REPORT_CREATED`, `ISSUE_CREATED`, `COUNTER_SIGNATURE_CREATED`, `SCHEDULE_COMPLETED` (coming soon). |
+| **Import pipeline** | Accept CSV or JSON; define custom column mappings per organisation.                                         |
+| **Plugins (beta)**  | Write a small WASM function to inject bespoke business constraints into the optimiser.                      |

@@ -1,0 +1,144 @@
+---
+title: Quickstart
+description: "InspectAI in under 5 minutes"
+---
+
+# Hello, InspectAI -- in 5 Minutes ⏱️
+
+This guide gets you from zero to a **live, AI-verified inspection run**.
+
+1. Grab an API key
+2. Install the SDK or use plain cURL
+3. Create a _Checklist_
+4. Launch a _Job_
+5. Upload _Evidence_ (photo)
+6. Pull the scored result.
+
+### 1. Prerequisites
+
+| What | Notes |
+|:------|:-------|
+| Checkfirst account | Sign up or sign in at **dashboard.checkfirstapp.com** → **Settings → API Tokens** to generate a key/secret pair. |
+| API endpoint | Base URL: `https://api.checkfirstapp.com/v1/` (shown in the Swagger UI) |
+| Recommended SDKs | *Node.js* and *Python* wrappers ship with typed helpers (see install below). |
+| Minimum data | One JSON checklist template (below) and a JPEG/PNG image ≤ 10 MB. |
+
+> **Tip:** All endpoints are available over plain HTTPS; offline mobile capture syncs automatically when the device reconnects.
+
+### 2. Install the SDK (skip if you prefer cURL)
+
+```bash
+# Node
+npm add @checkfirst/inspectai-sdk          # ESM + TS types
+
+# Python
+pip install inspectai-sdk
+```
+
+Both SDKs expose the same high-level objects: `Checklist`, `Job`, `Evidence`, `Issue`, `Report`.
+
+### 3. Create your first checklist
+
+A **Checklist** is a version-controlled template with smart scoring logic that flags issues automatically.
+
+```bash
+curl -X POST https://api.checkfirstapp.com/v1/checklists \
+  -u "$API_KEY:$API_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "name": "Fire Extinguisher Audit v1",
+        "version": "1.0.0",
+        "items": [
+          {
+            "id": "ext-pressure",
+            "prompt": "Pressure gauge in green zone?",
+            "type": "boolean",
+            "score_on_yes": 10,
+            "score_on_no": 0
+          },
+          {
+            "id": "ext-expiry",
+            "prompt": "Expiration date MM/YY",
+            "type": "date",
+            "validation": { "before": "today+365d" }
+          }
+        ]
+      }'
+```
+
+Response:
+
+```jsonc
+{
+  "id": "cklst_01HTV2KCRE67G1T1X6MQYE5WQJ",
+  "version": "1.0.0",
+  "created_at": "2025-05-08T10:12:31Z"
+}
+```
+
+### 4. Launch a job (inspection run)
+
+```bash
+curl -X POST https://api.checkfirstapp.com/v1/jobs \
+  -u "$API_KEY:$API_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "checklist_id": "cklst_01HTV2KCRE67G1T1X6MQYE5WQJ",
+        "reference": "STORE-AMS-23-051",
+        "assignee": "technician@your-company.com"
+      }'
+```
+
+You’ll receive a `job_id` (e.g., `job_01HTV2PY1VGZCN44D5FQMP2JM2`).
+Field staff can now work **offline** in the mobile app; data syncs when back online.
+
+### 5. Attach evidence (image upload + instant AI verification)
+
+```bash
+curl -X POST \
+  https://api.checkfirstapp.com/v1/jobs/job_…/evidence \
+  -u "$API_KEY:$API_SECRET" \
+  -F "file=@pressure-gauge.jpg"
+```
+
+The backend runs **AI Image Verification** (\~500 ms median) to ensure the photo matches checklist rules.
+If something looks wrong, the job moves to the *Issue* queue and triggers the `image.flagged` webhook.
+
+### 6. Retrieve the scored report
+
+```bash
+curl -u "$API_KEY:$API_SECRET" \
+  https://api.checkfirstapp.com/v1/jobs/job_…/report
+```
+
+Sample JSON excerpt:
+
+```jsonc
+{
+  "score": 9.75,
+  "status": "passed",
+  "issues": [],
+  "signed_at": "2025-05-08T10:25:42Z"
+}
+```
+
+You can also `Accept: application/pdf` for a ready-to-send certificate.
+
+### 7. Clean up (optional)
+
+```bash
+curl -X DELETE https://api.checkfirstapp.com/v1/jobs/job_… \
+  -u "$API_KEY:$API_SECRET"
+```
+
+
+## Implementation timeline
+
+Most teams are production-ready *within weeks, not months* and report **25 – 40 % efficiency gains in the first quarter**. ([Checkfirst AI][3], [Checkfirst AI][2])
+
+Good luck — and happy inspecting! 🚀
+
+
+[1]: https://www.checkfirst.ai/inspectai "InspectAI by Checkfirst | AI-Enhanced Inspections"
+[2]: https://www.checkfirst.ai/blog/why-ticc-businesses-choosing-inspectai-for-smarter-inspections-audits "Checkfirst"
+[3]: https://www.checkfirst.ai/blog/how-inspectai-audit-workflows-more-efficient-for-ticc-companies "Checkfirst"

@@ -1,0 +1,110 @@
+---
+title: Webhooks
+description: "Integrating with ScheduleAI"
+---
+
+Give ScheduleAI a callback URL and it will **push** events to you in real-time.
+Use them to automate downstream workflows—post a message in Slack when a report is filed, open a ticket in your QMS when an issue is raised, or update your planning board as soon as a counter-signature lands.
+
+#### Supported events
+
+| Event `type`                | Fired when…                                         | Typical use-case                                                 |
+| :-------------------------- | :-------------------------------------------------- | :--------------------------------------------------------------- |
+| `REPORT_CREATED`            | A user submits a report from the mobile or web app. | Pull the full report JSON / PDF and archive it in your DMS.      |
+| `ISSUE_CREATED`             | An issue is flagged during an inspection.           | Create a corrective-action ticket and assign it to a supervisor. |
+| `COUNTER_SIGNATURE_CREATED` | A report is counter-signed in the dashboard.        | Mark the job as “Closed” in your ERP and notify the client.      |
+
+#### Registering a webhook
+
+##### Option 1 – Dashboard
+
+1. Navigate to **Organisation ▸ Webhooks**.
+2. Click **Add Webhook**.
+3. Pick an event `type`.
+4. Enter the public **POST** URL your server will listen on.
+
+That’s it—events start flowing immediately.
+
+##### Option 2 – REST API
+
+```bash
+curl -X POST https://schedule.checkfirst.ai/api/v1/hooks \
+  -H "X-API-Key: <YOUR_API_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "url": "https://example.com/webhooks/checkfirst",
+        "type": "REPORT_CREATED"
+      }'
+```
+
+<details>
+<summary>Successful response</summary>
+
+```json
+{
+  "id": 9,
+  "type": "REPORT_CREATED",
+  "url": "https://example.com/webhooks/checkfirst",
+  "client": { "id": 2 }
+}
+```
+
+</details>
+
+> **Note**
+> The callback URL **must accept POST** requests.
+
+#### Event payload format
+
+Each delivery is a JSON object:
+
+```json
+{
+  "id": 1042,
+  "type": "ISSUE_CREATED",
+  "createdAt": "2024-06-05T09:27:14Z",
+  "data": {
+    "issueId": "8e2a60e1-92e7-4827-97d5-672b8b5ef4d3",
+    "projectReference": "PR-23015",
+    "competencyCode": "ISO17020",
+    "inspector": "K. Nguyen"
+  }
+}
+```
+
+| Field       | Description                               |
+| :---------- | :---------------------------------------- |
+| `id`        | Unique delivery identifier.               |
+| `type`      | Event name (see table above).             |
+| `createdAt` | UTC timestamp when the event was emitted. |
+| `data`      | Event-specific attributes.                |
+
+> **Delivery guarantees**
+> Events are **at-least-once**: duplicate IDs are possible—deduplicate on `id`.
+
+#### Handling retries
+
+If your endpoint returns **anything other than** `2xx`, ScheduleAI retries with exponential back-off (up to three attempts).
+Always respond quickly (e.g. `202 Accepted`) and do heavy processing asynchronously.
+
+#### Securing your webhook
+
+1. **HTTPS only** – use a valid TLS certificate.
+2. **IP allow-listing** (optional) – Permit traffic from ScheduleAI’s egress IPs.
+3. **HMAC signature** (recommended) – add a shared secret header such as `X-Signature` and verify the request body.
+
+#### Testing locally
+
+```bash
+ngrok http 8080
+```
+
+Point the dashboard at the forwarding URL (e.g. `https://random.ngrok.io/webhooks/checkfirst`) and watch events stream into your dev machine.
+
+#### Managing existing hooks
+
+| Action      | Endpoint                    | Example                                                             |
+| :---------- | :-------------------------- | :------------------------------------------------------------------ |
+| List hooks  | `GET /api/v1/hooks`         | `curl -H "X-API-Key:…" https://schedule.checkfirst.ai/api/v1/hooks` |
+| Delete hook | `DELETE /api/v1/hooks/{id}` | `curl -X DELETE …/hooks/9`                                          |
+
